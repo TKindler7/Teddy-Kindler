@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- TODO 1: Put your name or handle in the title below (this shows in the browser tab). -->
+  <title>My Coding Portfolio</title>
+
+  <style>
+    /* You can change any of these colors and sizes to make the page yours. */
+    :root {
+      --bg: #0f172a;          /* page background */
+      --card: #1e293b;        /* project card background */
+      --text: #e2e8f0;        /* main text */
+      --muted: #94a3b8;       /* softer text */
+      --accent: #38bdf8;      /* links and highlights */
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 48px 20px 80px; }
+    header { margin-bottom: 40px; }
+    h1 { font-size: 2.2rem; margin: 0 0 8px; }
+    .tagline { color: var(--muted); font-size: 1.1rem; margin: 0; }
+    h2 { font-size: 1.4rem; margin: 40px 0 16px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    a { color: var(--accent); }
+
+    .projects { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 620px) { .projects { grid-template-columns: 1fr 1fr; } }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card h3 { margin: 0 0 6px; font-size: 1.15rem; }
+    .card p { margin: 0 0 14px; color: var(--muted); font-size: 0.95rem; }
+    .card .links a { display: inline-block; margin-right: 14px; font-size: 0.9rem; }
+    footer { margin-top: 60px; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <!-- TODO 2: Replace with your name or a handle. Do NOT put your full name +
+           email + phone together. First name + last initial, or a handle, is plenty. -->
+      <h1>Alex R.</h1>
+
+      <!-- TODO 3: One line about you as a builder. -->
+      <p class="tagline">Making games and apps in Coding with AI @ Menlo.</p>
+    </header>
+
+    <section>
+      <h2>About this portfolio</h2>
+      <!-- TODO 4: A few sentences. Why you're excited, what you want to get better at. -->
+      <p>
+        This is where I keep everything I build this semester. Each project has a
+        live demo you can try and a short write-up of how I thought through it —
+        including the messy parts.
+      </p>
+    </section>
+
+    <section>
+      <h2>Projects</h2>
+      <div class="projects">
+
+        <!-- This is an EXAMPLE card. Copy it for each new project.
+             When you add a project, put its files in a folder (e.g. /name-game/)
+             and point the "Live demo" link at that folder. -->
+        <div class="card">
+          <h3>Name Game</h3>
+          <p>A game that helps you match names to faces. My first build sprint.</p>
+          <div class="links">
+            <!-- TODO 5: Uncomment these once the name-game folder exists.
+                 Talk to your teacher before publishing anything with other
+                 students' faces on it. -->
+            <!-- <a href="./name-game/">Live demo</a> -->
+            <!-- <a href="./name-game/README.md">How I built it</a> -->
+            <span style="color:var(--muted); font-size:0.85rem;">Coming soon</span>
+          </div>
+        </div>
+
+        <!-- TODO 6: Add more cards here as you finish more sprints. -->
+
+      </div>
+    </section>
+
+    <footer>
+      <!-- TODO 7: Optional — a link to your GitHub profile. -->
+      Built by hand + AI. Coding with AI, Menlo School.
+    </footer>
+
+  </div>
+</body>
+</html>
