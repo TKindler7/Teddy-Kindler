@@ -14,6 +14,12 @@ An app that helps actors learn their lines, one scene at a time. It supports sho
 
 Sign in with ChatGPT in the app to save plays and progress. Little Rehearsal is hosted separately; this repository contains its portfolio listing, not the app's source code.
 
+### Good Hour Diner
+
+[Open Good Hour Diner](https://appledesignlanguageamericandinerdop.vercel.app/) · [View the source on GitHub](https://github.com/TKindler7/GoodHourDiner)
+
+A fictional American diner with 23 original dishes, ingredient customization, interactive 3D previews, meal building, an animated kitchen, and a receipt that reflects the money not spent. No payment or delivery occurs. The app is hosted separately on Vercel; its source code is in the GoodHourDiner repository.
+
 ### Name Game — coming soon
 
 A planned game for matching names to faces. The portfolio currently includes a placeholder card; the game files and live demo are not yet in this repository.
