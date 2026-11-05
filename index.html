@@ -51,6 +51,13 @@
       border-bottom: 1px solid #334155;
       border-radius: 11px 11px 0 0;
     }
+    .card-with-preview { grid-column: 1 / -1; display: grid; gap: 24px; align-items: center; }
+    .project-preview { display: block; width: 100%; max-width: 300px; margin: 0 auto; border-radius: 8px; }
+    .project-preview:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+    .project-preview img { display: block; width: 100%; height: auto; border-radius: inherit; }
+    @media (min-width: 620px) {
+      .card-with-preview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    }
     footer { margin-top: 60px; color: var(--muted); font-size: 0.85rem; }
   </style>
 </head>
@@ -78,13 +85,18 @@
       <h2>Projects</h2>
       <div class="projects">
 
-        <div class="card">
+        <div class="card card-with-preview">
+          <a class="project-preview" href="https://little-rehearsal.tk7272.chatgpt.site/" aria-label="Open Little Rehearsal">
+            <img src="assets/little-rehearsal-preview.png" width="822" height="1559" loading="lazy" decoding="async" alt="Little Rehearsal's yellow brick rehearsal road, scarecrow practice buddy, and daily streak panel." />
+          </a>
+          <div>
           <h3>Little Rehearsal</h3>
           <p>An app that helps actors learn their lines, one scene at a time. Practice in short daily sessions, track your progress, and get encouragement from a playful scarecrow rehearsal buddy. Designed with iPad practice in mind.</p>
           <div class="links">
             <a href="https://little-rehearsal.tk7272.chatgpt.site/">Open Little Rehearsal</a>
           </div>
           <p style="font-size:0.85rem; margin:10px 0 0;">Sign in with ChatGPT to save your plays and progress.</p>
+          </div>
         </div>
 
         <div class="card">
