@@ -20,6 +20,8 @@ Sign in with ChatGPT in the app to save plays and progress. Little Rehearsal is 
 
 A fictional American diner with 23 original dishes, ingredient customization, interactive 3D previews, meal building, an animated kitchen, and a receipt that reflects the money not spent. No payment or delivery occurs. The app is hosted separately on Vercel; its source code is in the GoodHourDiner repository.
 
+The portfolio card includes a screenshot of the diner menu (`assets/good-hour-diner-screenshot.jpg`).
+
 ### Name Game — coming soon
 
 A planned game for matching names to faces. The portfolio currently includes a placeholder card; the game files and live demo are not yet in this repository.
@@ -38,6 +40,7 @@ The portfolio uses plain HTML and CSS and is published with GitHub Pages.
 ```text
 Teddy-Kindler/
 ├── index.html   # Portfolio homepage and CSS
+├── assets/      # Project screenshots
 └── README.md    # Project overview and editing guide
 ```
 
