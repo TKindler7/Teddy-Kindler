@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Questline - The Menlo Knight's Realm</title>
+<style>
+/* === CSS VARIABLES (16-BIT RETRO PALETTE & UI) === */
+:root {
+  --menlo-navy: #0a192f;
+  --menlo-navy-light: #172a45;
+  --menlo-gold: #ffb703;
+  --menlo-yellow: #ffea00;
+  
+  --c-bg: #070d18;
+  --c-panel: #111e38;
+  --c-panel-border: #1e3a60;
+  --c-dark-grey: #2b3a4e;
+  --c-red: #e63946;
+  --c-green: #38b000;
+  --c-cyan: #4cc9f0;
+  --c-white: #f8f9fa;
+  --c-grey: #8d99ae;
+  
+  --font-main: 'Courier New', Courier, monospace;
+  --ui-border: 4px solid var(--menlo-gold);
+  --ui-shadow: inset -4px -4px 0px rgba(0,0,0,0.6), 4px 4px 0px rgba(0,0,0,0.8);
+}
+
+/* === BASE RESET & UI LAYOUT === */
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+body {
+  background-color: var(--c-bg); color: var(--c-white);
+  font-family: var(--font-main); text-transform: uppercase;
+  overflow: hidden; height: 100vh; width: 100vw;
+  display: flex; flex-direction: column;
+}
+
+button {
+  font-family: var(--font-main); text-transform: uppercase; cursor: pointer;
+  background: var(--menlo-navy-light); color: var(--c-white);
+  border: 3px solid var(--menlo-gold); box-shadow: var(--ui-shadow);
+  padding: 10px 14px; font-weight: bold; font-size: 12px; letter-spacing: 0.5px;
+  transition: transform 0.05s, filter 0.1s;
+}
+button:hover { filter: brightness(1.2); }
+button:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0px rgba(0,0,0,0.6); }
+button.primary { background: var(--menlo-gold); color: #000; border-color: var(--menlo-yellow); }
+button.success { background: var(--c-green); color: var(--c-white); border-color: #70e000; }
+button.danger { background: var(--c-red); border-color: #ff758f; }
+
+input, select {
+  font-family: var(--font-main); background: #040914; color: var(--c-white);
+  border: 3px solid var(--c-panel-border); padding: 8px 10px; font-size: 12px;
+  width: 100%; outline: none; margin-bottom: 10px; text-transform: uppercase;
+}
+input:focus, select:focus { border-color: var(--menlo-gold); }
+
+.hidden { display: none !important; }
+
+/* === SCREEN SHAKE FX === */
+.shake { animation: shakeAnim 0.25s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shakeAnim {
+  10%, 90% { transform: translate3d(-3px, 0, 0); }
+  20%, 80% { transform: translate3d(5px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
+  40%, 60% { transform: translate3d(7px, 0, 0); }
+}
+
+/* === LAYOUT === */
+#app-container { display: flex; flex-direction: column; height: 100vh; position: relative; }
+.screen { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* === TOP BAR (HEADER) === */
+#top-bar {
+  background: var(--menlo-navy); border-bottom: 4px solid var(--menlo-gold);
+  padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+  z-index: 10;
+}
+.stat-block { display: flex; flex-direction: column; font-size: 10px; }
+.stat-value { font-size: 15px; font-weight: bold; color: var(--menlo-gold); }
+.level-bar-container { flex: 1; margin: 0 12px; max-width: 260px; }
+.level-text { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: var(--menlo-gold); }
+.progress-bg { background: #000; border: 2px solid var(--c-panel-border); height: 14px; position: relative; }
+.progress-fill { background: var(--c-cyan); height: 100%; width: 0%; transition: width 0.4s ease-out; }
+
+/* === MAIN CONTENT === */
+#main-content { flex: 1; position: relative; overflow-y: auto; background: var(--c-bg); }
+.view { padding: 12px; display: none; min-height: 100%; }
+.view.active { display: block; }
+
+/* Kingdom View */
+#view-kingdom { padding: 0; }
+#kingdom-canvas-container { height: 210px; position: relative; background: #000; border-bottom: 4px solid var(--menlo-gold); }
+canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+#kingdom-ui { padding: 12px; }
+.card {
+  background: var(--menlo-navy); border: 3px solid var(--c-panel-border);
+  padding: 12px; margin-bottom: 12px; box-shadow: var(--ui-shadow); position: relative;
+}
+.card.highlight { border-color: var(--menlo-gold); }
+.card-header { font-size: 10px; color: var(--menlo-gold); margin-bottom: 6px; letter-spacing: 1px; }
+.quest-title { font-size: 15px; font-weight: bold; color: var(--c-white); margin-bottom: 4px; }
+.quest-meta { font-size: 11px; color: var(--c-cyan); display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.badge { background: var(--menlo-navy-light); padding: 2px 6px; font-size: 9px; color: var(--menlo-gold); border: 1px solid var(--menlo-gold); }
+
+/* MENLO KNIGHT DIALOGUE CARD */
+.menlo-dialogue {
+  background: var(--menlo-navy-light); border: 3px solid var(--menlo-gold);
+  padding: 10px; display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
+}
+.menlo-avatar { width: 48px; height: 48px; background: #000; border: 2px solid var(--menlo-gold); flex-shrink: 0; }
+.menlo-speech { font-size: 11px; color: var(--c-white); line-height: 1.3; }
+
+/* TIME SELECTOR */
+.time-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.time-btn { padding: 6px 8px; font-size: 10px; flex: 1; min-width: 50px; text-align: center; }
+
+/* 16-BIT BOSS BATTLE ARENA */
+.boss-arena {
+  background: #0d0614; border: 4px solid var(--c-red);
+  padding: 10px; margin-bottom: 12px; position: relative;
+  box-shadow: 0 0 15px rgba(230, 57, 70, 0.3);
+}
+.boss-canvas-wrap { height: 160px; width: 100%; background: #000; border: 2px solid var(--c-panel-border); margin-bottom: 8px; position: relative; overflow: hidden; }
+.boss-hp-bg { background: #300; border: 2px solid var(--c-white); height: 16px; position: relative; margin-bottom: 8px; }
+.boss-hp-fill { background: var(--c-red); height: 100%; width: 100%; transition: width 0.3s ease-out; }
+.boss-hp-text { position: absolute; width: 100%; text-align: center; font-size: 10px; top: 1px; color: var(--c-white); text-shadow: 1px 1px 0 #000; }
+
+.stage-item {
+  background: var(--menlo-navy); border: 2px solid var(--c-panel-border);
+  padding: 8px 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; font-size: 11px;
+  cursor: pointer; transition: all 0.1s;
+}
+.stage-item:hover { border-color: var(--menlo-gold); background: var(--menlo-navy-light); }
+.stage-item.completed { background: #0f2d18; border-color: var(--c-green); text-decoration: line-through; color: var(--c-grey); }
+.stage-checkbox { width: 20px; height: 20px; border: 2px solid var(--menlo-gold); display: flex; align-items: center; justify-content: center; font-weight: bold; background: #000; flex-shrink: 0; color: var(--menlo-yellow); }
+
+/* POMODORO TIMER STYLES */
+.pomo-mode-btn {
+  flex: 1; font-size: 10px; padding: 8px 4px; border-color: var(--c-panel-border);
+}
+.pomo-mode-btn.active {
+  background: var(--menlo-gold); color: #000; border-color: var(--menlo-yellow);
+}
+#pomo-display {
+  font-size: 48px; color: var(--c-white); text-shadow: 4px 4px 0 #000; text-align: center; margin: 10px 0;
+}
+
+/* BOTTOM NAV */
+#bottom-nav {
+  background: var(--menlo-navy); border-top: 4px solid var(--menlo-gold);
+  display: flex; height: 56px; z-index: 10;
+}
+.nav-btn {
+  flex: 1; background: none; border: none; box-shadow: none;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  color: var(--c-grey); font-size: 8.5px; border-right: 1px solid var(--c-panel-border);
+}
+.nav-btn:last-child { border-right: none; }
+.nav-btn.active { color: var(--menlo-gold); background: rgba(255,183,3,0.1); }
+.nav-add { background: var(--menlo-gold); color: #000; font-size: 24px; font-weight: bold; }
+
+/* MODALS & OVERLAYS */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+.modal-content {
+  background: var(--menlo-navy); border: 4px solid var(--menlo-gold);
+  padding: 16px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto;
+  box-shadow: 8px 8px 0px rgba(0,0,0,0.8);
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+#splash-screen, #setup-screen, #focus-screen, #completion-screen {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--c-bg); z-index: 200; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; padding: 16px; text-align: center;
+}
+
+#fx-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 300; }
+</style>
+</head>
+<body>
+
+<canvas id="fx-canvas"></canvas>
+
+<!-- SPLASH SCREEN -->
+<div id="splash-screen" class="screen">
+  <div style="width: 100%; height: 220px; background: #000; border: 4px solid var(--menlo-gold); margin-bottom: 16px; position: relative;">
+    <canvas id="splash-canvas"></canvas>
+  </div>
+  <h1 style="font-size: 26px; color: var(--menlo-gold); text-shadow: 3px 3px 0 #000; margin-bottom: 4px;">QUESTLINE</h1>
+  <p style="font-size: 11px; color: var(--c-cyan); margin-bottom: 20px;">WITH THE MENLO KNIGHT</p>
+  <button class="primary" onclick="app.startSetupOrMain()" style="font-size: 15px; padding: 12px 24px;">[ ENTER KINGDOM ]</button>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen hidden">
+  <h2 style="color:var(--menlo-gold); margin-bottom:8px;">BUILD YOUR CLASSES</h2>
+  <p style="font-size: 11px; color:var(--c-grey); margin-bottom: 16px;">Select subjects for your realm:</p>
+  
+  <div id="setup-subjects" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; max-width: 320px;"></div>
+  
+  <div style="display: flex; gap: 6px; width: 100%; max-width: 300px; margin-bottom: 16px;">
+    <input type="text" id="setup-custom-subject" placeholder="CUSTOM SUBJECT..." style="margin:0;">
+    <button onclick="app.addSetupSubject()">+ ADD</button>
+  </div>
+  
+  <button class="primary" onclick="app.finishSetup()" style="width: 100%; max-width: 300px;">[ CLAIM YOUR CASTLE ]</button>
+</div>
+
+<!-- MAIN APP CONTAINER -->
+<div id="app-container" class="hidden">
+  
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div class="stat-block">
+      <span style="color:var(--c-grey);">CASTLE</span>
+      <span class="stat-value" id="ui-level">LVL 1</span>
+    </div>
+    
+    <div class="level-bar-container">
+      <div class="level-text">
+        <span id="ui-xp-text">0 / 500 XP</span>
+        <span><span id="ui-streak">🔥 0</span> <span id="ui-momentum">⚡ 50</span></span>
+      </div>
+      <div class="progress-bg"><div class="progress-fill" id="ui-xp-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
+    
+    <!-- KINGDOM VIEW -->
+    <div id="view-kingdom" class="view active">
+      <div id="kingdom-canvas-container">
+        <canvas id="kingdom-canvas"></canvas>
+      </div>
+
+      <div id="kingdom-ui">
+        <!-- Menlo Knight Advice -->
+        <div class="menlo-dialogue">
+          <div class="menlo-avatar"><canvas id="menlo-avatar-canvas" width="48" height="48"></canvas></div>
+          <div class="menlo-speech" id="menlo-quote">"Greetings, scholar! Prepare thy blade—boss monsters and quests await!"</div>
+        </div>
+
+        <!-- Next Recommended Quest / Boss Quest -->
+        <div id="next-quest-container"></div>
+        
+        <!-- Quick Time Selector -->
+        <div class="card" style="margin-top: 10px;">
+          <div class="card-header">⚔️ HOW MUCH TIME HAVE YOU?</div>
+          <div class="time-selector">
+            <button class="time-btn" onclick="app.suggestQuest(5)">5 MIN</button>
+            <button class="time-btn" onclick="app.suggestQuest(15)">15 MIN</button>
+            <button class="time-btn" onclick="app.suggestQuest(30)">30 MIN</button>
+            <button class="time-btn" onclick="app.suggestQuest(45)">45 MIN</button>
+            <button class="time-btn" onclick="app.suggestQuest(60)">1 HR+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUESTS LIST VIEW -->
+    <div id="view-quests" class="view">
+      <h3 style="color:var(--menlo-gold); border-bottom: 2px solid var(--c-panel-border); padding-bottom: 6px; margin-bottom: 12px;">ACTIVE QUEST BOARD</h3>
+      <div id="quest-list-container"></div>
+    </div>
+
+    <!-- ON-THEME POMODORO TIMER VIEW -->
+    <div id="view-pomo" class="view">
+      <h3 style="color:var(--menlo-gold); border-bottom: 2px solid var(--c-panel-border); padding-bottom: 6px; margin-bottom: 12px;">MENLO TRAINING GROUNDS</h3>
+      
+      <!-- MODE SELECTION -->
+      <div style="display:flex; gap:6px; margin-bottom:12px;">
+        <button id="pomo-mode-focus" class="pomo-mode-btn active" onclick="app.setPomoMode('focus')">⚔️ FOCUS (25M)</button>
+        <button id="pomo-mode-short" class="pomo-mode-btn" onclick="app.setPomoMode('short')">🛡️ REST (5M)</button>
+        <button id="pomo-mode-long" class="pomo-mode-btn" onclick="app.setPomoMode('long')">🏰 REST (15M)</button>
+      </div>
+
+      <!-- TIMER DISPLAY & CANVAS -->
+      <div class="card" style="text-align:center; padding:12px;">
+        <div id="pomo-status-title" style="color:var(--c-cyan); font-size:11px;">BATTLE FOCUS SESSION</div>
+        <div id="pomo-display">25:00</div>
+        
+        <!-- Animated 16-Bit Knight Powering Up Canvas -->
+        <div style="height: 130px; width: 100%; background: #000; border: 2px solid var(--c-panel-border); margin-bottom: 12px; position: relative;">
+          <canvas id="pomo-canvas"></canvas>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button id="pomo-start-btn" class="primary" onclick="app.togglePomoTimer()" style="flex:2; font-size:14px; padding:10px;">[ START TRAINING ]</button>
+          <button onclick="app.resetPomoTimer()" style="flex:1;">RESET</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">📜 TRAINING REWARDS</div>
+        <p style="font-size:11px; color:var(--c-grey);">Complete 25-minute Battle Focus sessions to power up the Menlo Knight, gain <span style="color:var(--menlo-gold);">+100 XP</span>, and restore <span style="color:var(--c-cyan);">+15 Momentum</span>!</p>
+        <p style="font-size:11px; margin-top:6px; color:var(--menlo-gold);">SESSIONS COMPLETED TODAY: <span id="pomo-completed-count" style="font-weight:bold;">0</span></p>
+      </div>
+    </div>
+
+    <!-- MAP VIEW -->
+    <div id="view-map" class="view">
+      <h3 style="color:var(--menlo-gold); border-bottom: 2px solid var(--c-panel-border); padding-bottom: 6px; margin-bottom: 12px;">REALM MAP</h3>
+      <div class="card" style="text-align:center; padding:20px;">
+        <h4 style="color:var(--c-cyan);">THE MENLO REALM</h4>
+        <p style="font-size:11px; margin-top:10px; color:var(--c-grey);">Your castle towers expand as homework quests are slain! Clear overdue tasks to protect your realm from ruin.</p>
+      </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="view-profile" class="view">
+      <h3 style="color:var(--menlo-gold); border-bottom: 2px solid var(--c-panel-border); padding-bottom: 6px; margin-bottom: 12px;">HERO HALL</h3>
+      <div class="card">
+        <h4>KNIGHT STATS</h4>
+        <p style="margin-top:8px; font-size:12px;">Total XP Earned: <span id="prof-xp" class="stat-value">0</span></p>
+        <p style="font-size:12px; margin-top:4px;">Quests Completed: <span id="prof-completed" class="stat-value">0</span></p>
+      </div>
+      <button onclick="app.resetData()" class="danger" style="width:100%; margin-top: 10px;">RESET ALL PROGRESS</button>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="nav-btn active" onclick="app.switchTab('kingdom', this)">KINGDOM</button>
+    <button class="nav-btn" onclick="app.switchTab('quests', this)">QUESTS</button>
+    <button class="nav-btn nav-add" onclick="app.openAddModal()">+</button>
+    <button class="nav-btn" onclick="app.switchTab('pomo', this)">POMO</button>
+    <button class="nav-btn" onclick="app.switchTab('profile', this)">HERO</button>
+  </div>
+
+</div>
+
+<!-- ADD QUEST MODAL -->
+<div id="modal-add" class="modal-overlay">
+  <div class="modal-content">
+    <h3 style="color:var(--menlo-gold); margin-bottom:8px;">NEW HOMEWORK QUEST</h3>
+    
+    <label style="font-size:10px; color:var(--c-grey);">QUEST NAME / QUICK ADD</label>
+    <input type="text" id="qa-title" placeholder="E.G. MATH PAGE 42 TOMORROW 30 MIN" onkeyup="app.parseQuickAdd(this.value)">
+    <div id="quick-add-hint" style="font-size:9px; color:var(--c-cyan); margin-top:-6px; margin-bottom:8px; min-height:12px;"></div>
+    
+    <label style="font-size:10px; color:var(--c-grey);">SUBJECT</label>
+    <select id="qa-subject"></select>
+    
+    <label style="font-size:10px; color:var(--c-grey);">DUE DATE</label>
+    <input type="date" id="qa-date">
+    
+    <div style="display:flex; gap: 8px;">
+      <div style="flex:1;">
+        <label style="font-size:10px; color:var(--c-grey);">EST. TIME</label>
+        <select id="qa-time">
+          <option value="5">5 MIN</option>
+          <option value="15" selected>15 MIN</option>
+          <option value="30">30 MIN</option>
+          <option value="45">45 MIN</option>
+          <option value="60">60 MIN</option>
+          <option value="90">90 MIN</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:10px; color:var(--c-grey);">DIFFICULTY</label>
+        <select id="qa-diff">
+          <option value="1">EASY</option>
+          <option value="2" selected>MEDIUM</option>
+          <option value="3">HARD</option>
+        </select>
+      </div>
+    </div>
+
+    <label style="font-size:11px; display:flex; align-items:center; gap:6px; margin-top:6px; cursor:pointer;">
+      <input type="checkbox" id="qa-boss" style="width:auto; margin:0;" onchange="document.getElementById('boss-options').style.display = this.checked ? 'block' : 'none'">
+      ⚔️ FORGE AS A BOSS QUEST
+    </label>
+
+    <div id="boss-options" style="display:none; margin-top: 8px; background:#000; padding:10px; border:2px solid var(--c-red);">
+      <h4 style="color:var(--c-red); font-size:11px; margin-bottom:4px;">BOSS MONSTER TEMPLATE</h4>
+      <select id="qa-boss-template" onchange="app.applyBossTemplate(this.value)">
+        <option value="essay">ESSAY BEHEMOTH</option>
+        <option value="project">PROJECT DRAGON</option>
+        <option value="test">EXAM DEMON</option>
+      </select>
+      <div id="qa-boss-stages" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="app.closeModals()">CANCEL</button>
+      <button class="primary" onclick="app.saveQuest()">ADD QUEST</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOCUS MODE SCREEN (FOR INDIVIDUAL QUESTS) -->
+<div id="focus-screen" class="screen hidden" style="background: #040814;">
+  <h3 id="focus-subject" style="color:var(--c-cyan);">SUBJECT</h3>
+  <h2 id="focus-title" style="font-size: 20px; color:var(--menlo-gold); margin-bottom: 12px;">Quest Title</h2>
+  
+  <div id="focus-timer" style="font-size: 56px; color: var(--c-white); text-shadow: 4px 4px 0 #000; margin: 10px 0;">25:00</div>
+  
+  <div style="width: 80%; max-width: 300px; height: 16px; border: 2px solid var(--c-panel-border); background: #000; position: relative; margin-bottom: 24px;">
+    <div id="focus-avatar" style="position: absolute; top: -8px; left: 0; width: 16px; height: 16px; background: var(--menlo-gold); border: 2px solid #fff; transition: left 1s linear;"></div>
+  </div>
+
+  <div style="display: flex; gap: 10px;">
+    <button onclick="app.exitFocusMode()">PAUSE / RETREAT</button>
+    <button class="success" onclick="app.completeCurrentFocusQuest()">[ SLAIN! COMPLETE ]</button>
+  </div>
+</div>
+
+<!-- VICTORY OVERLAY SCREEN -->
+<div id="completion-screen" class="screen hidden" style="background: rgba(4,8,20,0.95);">
+  <h1 style="color:var(--menlo-gold); font-size: 30px; text-shadow: 4px 4px 0 var(--c-red);" class="shake">VICTORY SLAIN!</h1>
+  <h3 id="comp-title" style="margin-top: 12px; color:var(--c-white);">Quest Title</h3>
+  
+  <div style="margin: 20px 0; font-size: 28px; color: var(--menlo-yellow); text-shadow: 2px 2px 0 #000;">
+    +<span id="comp-xp">0</span> XP
+  </div>
+
+  <div class="menlo-dialogue" style="max-width:320px;">
+    <div class="menlo-speech" id="comp-menlo-quote">"Huzzah! By Menlo's glory, procrastination has been vanquished!"</div>
+  </div>
+
+  <button class="primary" onclick="app.closeCompletionScreen()" style="font-size:16px; padding:12px 24px; margin-top:16px;">CLAIM REWARD</button>
+</div>
+
+<script>
+/* === 16-BIT SOUND SYNTHESIZER (Web Audio API) === */
+const sound = {
+  ctx: null,
+  init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+  playTone(freq, type, duration, vol=0.15) {
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch(e){}
+  },
+  click() { this.playTone(450, 'square', 0.05); },
+  slash() {
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.18);
+    } catch(e){}
+  },
+  hit() {
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.2);
+    } catch(e){}
+  },
+  fanfare() {
+    const notes = [293.66, 369.99, 440.00, 587.33];
+    notes.forEach((n, i) => {
+      setTimeout(() => this.playTone(n, 'square', 0.2, 0.2), i * 110);
+    });
+  }
+};
+
+/* === MAIN APPLICATION ENGINE === */
+const app = {
+  data: {
+    isFirstLaunch: true,
+    xp: 0,
+    level: 1,
+    momentum: 50,
+    streak: 0,
+    lastLoginDate: null,
+    subjects: [],
+    quests: [],
+    completedQuests: [],
+    pomoCompletedToday: 0
+  },
+  
+  state: {
+    currentTab: 'kingdom',
+    focusQuestId: null,
+    focusInterval: null,
+    focusSecondsLeft: 0,
+    focusTotalSeconds: 0,
+    
+    // SMOOTH BOSS ANIMATION STATE ENGINE
+    bossAnimState: {
+      phase: 'idle', // 'idle' | 'dash_in' | 'slash' | 'dash_back'
+      phaseTimer: 0,
+      knightX: 50,
+      monsterHit: false,
+      monsterFlashTimer: 0,
+      monsterRecoilX: 0,
+      sparks: [],
+      damagePopups: [],
+      slashArc: { active: false, timer: 0 }
+    },
+    
+    // Pomodoro State
+    pomoMode: 'focus', 
+    pomoSecondsLeft: 25 * 60,
+    pomoTotalSeconds: 25 * 60,
+    pomoRunning: false,
+    pomoInterval: null
+  },
+
+  defaultSubjects: ["ENGLISH", "MATH", "SCIENCE", "HISTORY", "SPANISH", "ARTS"],
+
+  menloQuotes: [
+    "Halt, scholar! By Menlo's honor, our next quest awaits!",
+    "A castle is built assignment by assignment. Stand firm!",
+    "Procrastination is a foul demon. Slain it with focus!",
+    "By my golden blade, that homework didn't stand a chance!",
+    "Rest if thou must, but never surrender thy momentum!"
+  ],
+
+  bossTemplates: {
+    essay: ["Understand Prompt & Topic", "Gather Sources", "Outline Structure", "Draft Intro & Paragraphs", "Revise & Final Submit"],
+    project: ["Plan Requirements", "Research Materials", "Assemble First Prototype", "Polishing Touches", "Final Submission"],
+    test: ["Review Chapter Notes", "Identify Weak Areas", "Complete Practice Problems", "Final Flashcard Run"]
+  },
+
+  init() {
+    this.loadData();
+    this.drawMenloAvatar();
+    if (this.data.isFirstLaunch) {
+      document.getElementById('splash-screen').classList.remove('hidden');
+      this.initKingdomCanvas('splash-canvas');
+    } else {
+      this.checkDailyReset();
+      this.startApp();
+    }
+  },
+
+  loadData() {
+    const saved = localStorage.getItem('questline_menlo_data_v2');
+    if (saved) {
+      try { this.data = { ...this.data, ...JSON.parse(saved) }; } catch (e){}
+    }
+  },
+
+  saveData() {
+    localStorage.setItem('questline_menlo_data_v2', JSON.stringify(this.data));
+    this.updateUIStats();
+  },
+
+  resetData() {
+    if(confirm("Reset all kingdom progress and slay history?")) {
+      localStorage.removeItem('questline_menlo_data_v2');
+      location.reload();
+    }
+  },
+
+  checkDailyReset() {
+    const today = new Date().toDateString();
+    if (this.data.lastLoginDate !== today) {
+      this.data.lastLoginDate = today;
+      this.data.pomoCompletedToday = 0;
+      this.saveData();
+    }
+  },
+
+  /* === NAVIGATION === */
+  startSetupOrMain() {
+    sound.click();
+    document.getElementById('splash-screen').classList.add('hidden');
+    if (this.data.isFirstLaunch) {
+      document.getElementById('setup-screen').classList.remove('hidden');
+      this.renderSetupSubjects();
+    } else {
+      this.startApp();
+    }
+  },
+
+  renderSetupSubjects() {
+    const container = document.getElementById('setup-subjects');
+    container.innerHTML = '';
+    this.defaultSubjects.forEach(sub => {
+      const isSelected = this.data.subjects.find(s => s.name === sub);
+      const btn = document.createElement('button');
+      btn.innerText = (isSelected ? "✓ " : "+ ") + sub;
+      btn.style.backgroundColor = isSelected ? "var(--c-green)" : "var(--menlo-navy-light)";
+      btn.onclick = () => { sound.click(); this.toggleSetupSubject(sub); };
+      container.appendChild(btn);
+    });
+  },
+
+  toggleSetupSubject(name) {
+    const idx = this.data.subjects.findIndex(s => s.name === name);
+    if (idx >= 0) this.data.subjects.splice(idx, 1);
+    else this.data.subjects.push({ id: Date.now() + Math.random(), name: name });
+    this.renderSetupSubjects();
+  },
+
+  addSetupSubject() {
+    const input = document.getElementById('setup-custom-subject');
+    const val = input.value.trim().toUpperCase();
+    if (val) {
+      this.defaultSubjects.push(val);
+      this.toggleSetupSubject(val);
+      input.value = '';
+    }
+  },
+
+  finishSetup() {
+    if (this.data.subjects.length === 0) { alert("Select at least one subject!"); return; }
+    this.data.isFirstLaunch = false;
+    this.saveData();
+    document.getElementById('setup-screen').classList.add('hidden');
+    this.startApp();
+  },
+
+  startApp() {
+    document.getElementById('app-container').classList.remove('hidden');
+    this.updateUIStats();
+    this.initKingdomCanvas('kingdom-canvas');
+    this.renderQuests();
+    this.renderNextQuest();
+    this.populateSubjectDropdown();
+    this.initPomoCanvas();
+  },
+
+  switchTab(tab, btn) {
+    sound.click();
+    this.state.currentTab = tab;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById('view-' + tab).classList.add('active');
+    if (btn) btn.classList.add('active');
+    
+    if(tab === 'quests') this.renderQuests();
+    if(tab === 'kingdom') this.renderNextQuest();
+    if(tab === 'pomo') this.updatePomoUI();
+    if(tab === 'profile') {
+      document.getElementById('prof-xp').innerText = this.data.xp;
+      document.getElementById('prof-completed').innerText = this.data.completedQuests.length;
+    }
+  },
+
+  /* === ON-THEME POMODORO ENGINE === */
+  setPomoMode(mode) {
+    sound.click();
+    this.state.pomoRunning = false;
+    clearInterval(this.state.pomoInterval);
+    document.getElementById('pomo-start-btn').innerText = "[ START TRAINING ]";
+
+    this.state.pomoMode = mode;
+    document.querySelectorAll('.pomo-mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('pomo-mode-' + mode).classList.add('active');
+
+    if (mode === 'focus') {
+      this.state.pomoTotalSeconds = 25 * 60;
+      document.getElementById('pomo-status-title').innerText = "BATTLE FOCUS SESSION";
+    } else if (mode === 'short') {
+      this.state.pomoTotalSeconds = 5 * 60;
+      document.getElementById('pomo-status-title').innerText = "SHORT RECOVERY REST";
+    } else if (mode === 'long') {
+      this.state.pomoTotalSeconds = 15 * 60;
+      document.getElementById('pomo-status-title').innerText = "CASTLE KEEP LONG REST";
+    }
+    this.state.pomoSecondsLeft = this.state.pomoTotalSeconds;
+    this.updatePomoUI();
+  },
+
+  togglePomoTimer() {
+    sound.click();
+    if (this.state.pomoRunning) {
+      this.state.pomoRunning = false;
+      clearInterval(this.state.pomoInterval);
+      document.getElementById('pomo-start-btn').innerText = "[ RESUME TRAINING ]";
+    } else {
+      this.state.pomoRunning = true;
+      document.getElementById('pomo-start-btn').innerText = "[ PAUSE ]";
+      this.state.pomoInterval = setInterval(() => this.tickPomo(), 1000);
+    }
+  },
+
+  resetPomoTimer() {
+    sound.click();
+    this.state.pomoRunning = false;
+    clearInterval(this.state.pomoInterval);
+    document.getElementById('pomo-start-btn').innerText = "[ START TRAINING ]";
+    this.state.pomoSecondsLeft = this.state.pomoTotalSeconds;
+    this.updatePomoUI();
+  },
+
+  tickPomo() {
+    if (this.state.pomoSecondsLeft > 0) {
+      this.state.pomoSecondsLeft--;
+      this.updatePomoUI();
+    } else {
+      this.state.pomoRunning = false;
+      clearInterval(this.state.pomoInterval);
+      document.getElementById('pomo-start-btn').innerText = "[ START TRAINING ]";
+
+      sound.fanfare();
+      document.getElementById('app-container').classList.add('shake');
+      setTimeout(() => document.getElementById('app-container').classList.remove('shake'), 300);
+
+      if (this.state.pomoMode === 'focus') {
+        this.data.xp += 100;
+        this.data.momentum = Math.min(100, this.data.momentum + 15);
+        this.data.pomoCompletedToday = (this.data.pomoCompletedToday || 0) + 1;
+        this.saveData();
+
+        this.triggerParticles(window.innerWidth/2, window.innerHeight/2);
+        alert("⚔️ BATTLE FOCUS COMPLETE!\n\nThou hast earned +100 XP and restored Momentum! Time for a short rest!");
+        this.setPomoMode('short');
+      } else {
+        alert("🛡️ REST COMPLETE!\n\nThy stamina is fully restored. Prepare for the next battle!");
+        this.setPomoMode('focus');
+      }
+    }
+  },
+
+  updatePomoUI() {
+    const m = Math.floor(this.state.pomoSecondsLeft / 60).toString().padStart(2, '0');
+    const s = (this.state.pomoSecondsLeft % 60).toString().padStart(2, '0');
+    document.getElementById('pomo-display').innerText = `${m}:${s}`;
+    document.getElementById('pomo-completed-count').innerText = this.data.pomoCompletedToday || 0;
+  },
+
+  initPomoCanvas() {
+    const canvas = document.getElementById('pomo-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const render = () => {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.fillStyle = '#070f1e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#172a45'; ctx.fillRect(0, h - 20, w, 20);
+
+      if (this.state.pomoRunning) {
+        ctx.fillStyle = 'rgba(255, 234, 0, 0.15)';
+        ctx.beginPath();
+        ctx.arc(w / 2, h - 45, 38 + Math.sin(Date.now() * 0.01) * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      this.draw16BitMenloKnight(ctx, w / 2, h - 55, 1.3, Math.floor(Date.now() / 100), false);
+
+      if (document.getElementById('pomo-canvas')) {
+        requestAnimationFrame(render);
+      }
+    };
+    render();
+  },
+
+  /* === QUEST CREATION === */
+  openAddModal() {
+    sound.click();
+    document.getElementById('modal-add').classList.add('active');
+    document.getElementById('qa-title').value = '';
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('qa-date').value = tomorrow.toISOString().split('T')[0];
+    document.getElementById('qa-boss').checked = false;
+    document.getElementById('boss-options').style.display = 'none';
+    this.applyBossTemplate('essay');
+  },
+
+  closeModals() {
+    sound.click();
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+  },
+
+  populateSubjectDropdown() {
+    const sel = document.getElementById('qa-subject');
+    sel.innerHTML = '';
+    this.data.subjects.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.innerText = s.name;
+      sel.appendChild(opt);
+    });
+  },
+
+  parseQuickAdd(text) {
+    const hint = document.getElementById('quick-add-hint');
+    if (!text) { hint.innerText = ''; return; }
+    
+    let cleanText = text.toLowerCase();
+    let detectedDate = null, detectedTime = null, detectedSubj = null;
+
+    const timeMatch = text.match(/(\d+)\s*(min|m|hr|hour)\b/i);
+    if (timeMatch) {
+      let num = parseInt(timeMatch[1]);
+      if (['hr','hour'].includes(timeMatch[2].toLowerCase())) num *= 60;
+      document.getElementById('qa-time').value = num >= 60 ? "60" : num >= 45 ? "45" : num >= 30 ? "30" : "15";
+      detectedTime = num + " MIN";
+    }
+
+    const d = new Date();
+    if (cleanText.includes('today')) {
+      document.getElementById('qa-date').value = d.toISOString().split('T')[0];
+      detectedDate = "TODAY";
+    } else if (cleanText.includes('tomorrow')) {
+      d.setDate(d.getDate() + 1);
+      document.getElementById('qa-date').value = d.toISOString().split('T')[0];
+      detectedDate = "TOMORROW";
+    }
+
+    for (let s of this.data.subjects) {
+      if (cleanText.includes(s.name.toLowerCase())) {
+        detectedSubj = s.name;
+        document.getElementById('qa-subject').value = s.id;
+        break;
+      }
+    }
+
+    let msg = [];
+    if (detectedSubj) msg.push(`SUBJ: ${detectedSubj}`);
+    if (detectedDate) msg.push(`DUE: ${detectedDate}`);
+    if (detectedTime) msg.push(`TIME: ${detectedTime}`);
+    hint.innerText = msg.length > 0 ? "DETECTED: " + msg.join(" | ") : "";
+  },
+
+  applyBossTemplate(type) {
+    const container = document.getElementById('qa-boss-stages');
+    container.innerHTML = '';
+    const stages = this.bossTemplates[type] || [];
+    stages.forEach((s, i) => {
+      container.innerHTML += `<div style="margin-bottom:4px; font-size:10px; color:#fff;">${i+1}. <input type="text" value="${s}" class="stage-input" style="width:85%; margin:0;"></div>`;
+    });
+  },
+
+  saveQuest() {
+    sound.click();
+    const title = document.getElementById('qa-title').value.trim();
+    if (!title) { alert("Enter a quest title!"); return; }
+
+    const isBoss = document.getElementById('qa-boss').checked;
+    let stages = [];
+    if (isBoss) {
+      document.querySelectorAll('.stage-input').forEach(inp => {
+        if (inp.value.trim()) stages.push({ title: inp.value.trim(), completed: false });
+      });
+    }
+
+    const quest = {
+      id: Date.now(),
+      title: title.toUpperCase(),
+      subjectId: parseFloat(document.getElementById('qa-subject').value),
+      dueDate: document.getElementById('qa-date').value,
+      estTime: parseInt(document.getElementById('qa-time').value),
+      difficulty: parseInt(document.getElementById('qa-diff').value),
+      isBoss: isBoss,
+      stages: stages,
+      status: 'pending'
+    };
+
+    this.data.quests.push(quest);
+    this.saveData();
+    this.closeModals();
+    this.renderQuests();
+    this.renderNextQuest();
+    this.triggerParticles(window.innerWidth/2, window.innerHeight/2);
+  },
+
+  calculateXP(time, difficulty) {
+    let base = time * 5 + 25;
+    if (difficulty == 3) base *= 1.25;
+    return Math.floor(base);
+  },
+
+  getAlgorithmScore(quest) {
+    if (quest.status !== 'pending') return -1;
+    let score = 0;
+    const now = new Date();
+    const due = new Date(quest.dueDate + "T23:59:59");
+    const hoursLeft = (due - now) / (1000 * 60 * 60);
+
+    if (hoursLeft < 0) score += 100;
+    else if (hoursLeft < 24) score += 80;
+    else if (hoursLeft < 48) score += 40;
+
+    if (quest.isBoss) score += 30;
+    return score;
+  },
+
+  getSortedQuests() {
+    return [...this.data.quests]
+      .filter(q => q.status === 'pending')
+      .sort((a, b) => this.getAlgorithmScore(b) - this.getAlgorithmScore(a));
+  },
+
+  suggestQuest(timeAvailable) {
+    sound.click();
+    const quests = this.getSortedQuests();
+    let best = quests.find(q => q.estTime <= timeAvailable) || quests[0];
+    if (best) this.renderQuestCard(best, document.getElementById('next-quest-container'), "BEST MOVE FOR " + timeAvailable + " MIN");
+  },
+
+  /* === RENDERING QUEST CARDS & BOSS ARENA === */
+  renderNextQuest() {
+    const container = document.getElementById('next-quest-container');
+    const quests = this.getSortedQuests();
+    
+    document.getElementById('menlo-quote').innerText = '"' + this.menloQuotes[Math.floor(Math.random()*this.menloQuotes.length)] + '"';
+
+    if (quests.length === 0) {
+      container.innerHTML = `
+        <div class="card" style="text-align:center; padding: 20px;">
+          <h3 style="color:var(--c-green);">VICTORY! ALL CLEAR!</h3>
+          <p style="color:var(--c-grey); font-size:10px; margin-top:4px;">The Menlo realm is peaceful. Enjoy thy rest!</p>
+        </div>`;
+      return;
+    }
+    this.renderQuestCard(quests[0], container, "RECOMMENDED NEXT QUEST");
+  },
+
+  renderQuestCard(q, container, headerText) {
+    const sub = this.data.subjects.find(s => s.id === q.subjectId);
+    const xp = this.calculateXP(q.estTime, q.difficulty);
+
+    if (q.isBoss) {
+      const compStages = q.stages.filter(s=>s.completed).length;
+      const totalStages = q.stages.length;
+      const hpPct = totalStages > 0 ? Math.floor(((totalStages - compStages) / totalStages) * 100) : 0;
+
+      let stagesHTML = '';
+      q.stages.forEach((stg, i) => {
+        stagesHTML += `
+          <div class="stage-item ${stg.completed ? 'completed' : ''}" onclick="app.completeBossStage(${q.id}, ${i})">
+            <div class="stage-checkbox">${stg.completed ? '✓' : ''}</div>
+            <div>STEP ${i+1}: ${stg.title}</div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="boss-arena">
+          <div class="card-header" style="color:var(--c-red);">⚔️ BOSS BATTLE REALM</div>
+          <div style="font-size:14px; font-weight:bold; margin-bottom:4px; color:var(--menlo-gold);">${q.title}</div>
+          
+          <div class="boss-hp-bg">
+            <div class="boss-hp-fill" style="width:${hpPct}%;"></div>
+            <div class="boss-hp-text">MONSTER HP: ${totalStages - compStages} / ${totalStages}</div>
+          </div>
+
+          <div class="boss-canvas-wrap">
+            <canvas id="boss-arena-canvas"></canvas>
+          </div>
+
+          <div style="margin-top:8px;">
+            <div style="font-size:10px; color:var(--menlo-gold); margin-bottom:6px;">STRIKE THE BEAST STEP BY STEP:</div>
+            ${stagesHTML}
+          </div>
+        </div>
+      `;
+      setTimeout(() => this.initBossArenaLoop(q), 50);
+
+    } else {
+      container.innerHTML = `
+        <div class="card highlight">
+          <div class="card-header">⚔️ ${headerText}</div>
+          <span class="badge">${sub ? sub.name : 'HOMEWORK'}</span>
+          <div class="quest-title" style="margin-top:4px;">${q.title}</div>
+          <div class="quest-meta">
+            <span>📅 DUE: ${q.dueDate}</span>
+            <span>⏱ ≈${q.estTime}M</span>
+            <span style="color:var(--menlo-gold);">⭐ +${xp} XP</span>
+          </div>
+          <button class="primary" style="width:100%;" onclick="app.startFocusMode(${q.id})">[ BEGIN FOCUS QUEST ]</button>
+        </div>
+      `;
+    }
+  },
+
+  renderQuests() {
+    const container = document.getElementById('quest-list-container');
+    container.innerHTML = '';
+    const quests = this.getSortedQuests();
+    if (quests.length === 0) {
+      container.innerHTML = '<p style="color:var(--c-grey); text-align:center;">No active quests on the board.</p>';
+      return;
+    }
+    quests.forEach(q => {
+      const sub = this.data.subjects.find(s => s.id === q.subjectId);
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span class="badge">${sub ? sub.name : ''}</span>
+            <div style="font-size:13px; font-weight:bold; margin-top:2px;">${q.title}</div>
+            <div style="font-size:9px; color:var(--c-grey);">DUE ${q.dueDate} | ≈${q.estTime}M</div>
+          </div>
+          <button class="primary" onclick="app.startFocusMode(${q.id})">GO</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  },
+
+  /* === STEP-BY-STEP ACTIVE COMBAT SYSTEM === */
+  completeBossStage(questId, stageIdx) {
+    const q = this.data.quests.find(x => x.id === questId);
+    if (!q || !q.stages[stageIdx] || q.stages[stageIdx].completed) return;
+
+    if (this.state.bossAnimState.phase !== 'idle') return; // Prevent double trigger during attack
+
+    q.stages[stageIdx].completed = true;
+    
+    // Initiate smooth 4-Phase Combat Sequence
+    const anim = this.state.bossAnimState;
+    anim.phase = 'dash_in';
+    anim.phaseTimer = 0;
+
+    sound.slash();
+  },
+
+  updateUIStats() {
+    document.getElementById('ui-level').innerText = `LVL ${this.data.level}`;
+    const reqXP = this.data.level * 400 + 200;
+    document.getElementById('ui-xp-text').innerText = `${this.data.xp} / ${reqXP} XP`;
+    document.getElementById('ui-streak').innerText = `🔥 ${this.data.streak}`;
+    document.getElementById('ui-momentum').innerText = `⚡ ${this.data.momentum}`;
+    const pct = Math.min(100, Math.floor((this.data.xp / reqXP) * 100));
+    document.getElementById('ui-xp-bar').style.width = pct + '%';
+  },
+
+  /* === FOCUS TIMER FOR INDIVIDUAL QUESTS === */
+  startFocusMode(id) {
+    sound.click();
+    const q = this.data.quests.find(x => x.id === id);
+    if (!q) return;
+    this.state.focusQuestId = id;
+    
+    const sub = this.data.subjects.find(s => s.id === q.subjectId);
+    document.getElementById('focus-subject').innerText = sub ? sub.name : "QUEST";
+    document.getElementById('focus-title').innerText = q.title;
+    
+    this.state.focusTotalSeconds = q.estTime * 60;
+    this.state.focusSecondsLeft = this.state.focusTotalSeconds;
+    
+    document.getElementById('app-container').classList.add('hidden');
+    document.getElementById('focus-screen').classList.remove('hidden');
+    
+    this.updateFocusTimerDisplay();
+    clearInterval(this.state.focusInterval);
+    this.state.focusInterval = setInterval(() => this.tickFocus(), 1000);
+  },
+
+  tickFocus() {
+    if (this.state.focusSecondsLeft > 0) {
+      this.state.focusSecondsLeft--;
+      this.updateFocusTimerDisplay();
+    }
+  },
+
+  updateFocusTimerDisplay() {
+    const m = Math.floor(this.state.focusSecondsLeft / 60).toString().padStart(2, '0');
+    const s = (this.state.focusSecondsLeft % 60).toString().padStart(2, '0');
+    document.getElementById('focus-timer').innerText = `${m}:${s}`;
+    const pct = 100 - ((this.state.focusSecondsLeft / this.state.focusTotalSeconds) * 100);
+    document.getElementById('focus-avatar').style.left = `calc(${pct}% - 8px)`;
+  },
+
+  exitFocusMode() {
+    sound.click();
+    clearInterval(this.state.focusInterval);
+    document.getElementById('focus-screen').classList.add('hidden');
+    document.getElementById('app-container').classList.remove('hidden');
+  },
+
+  completeCurrentFocusQuest() {
+    clearInterval(this.state.focusInterval);
+    const q = this.data.quests.find(x => x.id === this.state.focusQuestId);
+    if (q) this.completeQuest(q);
+  },
+
+  /* === COMPLETION REWARDS === */
+  completeQuest(q) {
+    sound.fanfare();
+    document.getElementById('focus-screen').classList.add('hidden');
+    document.getElementById('app-container').classList.add('hidden');
+    
+    q.status = 'completed';
+    const xpEarned = this.calculateXP(q.estTime, q.difficulty);
+    this.data.xp += xpEarned;
+    this.data.momentum = Math.min(100, this.data.momentum + 15);
+    this.data.completedQuests.push(q.id);
+
+    const reqXP = this.data.level * 400 + 200;
+    if (this.data.xp >= reqXP) {
+      this.data.level++;
+      this.data.xp -= reqXP;
+    }
+
+    this.saveData();
+
+    document.getElementById('comp-title').innerText = q.title;
+    document.getElementById('comp-xp').innerText = xpEarned;
+    document.getElementById('comp-menlo-quote').innerText = '"By my golden blade! The beast has been vanquished!"';
+    document.getElementById('completion-screen').classList.remove('hidden');
+
+    this.triggerParticles(window.innerWidth/2, window.innerHeight/2);
+  },
+
+  closeCompletionScreen() {
+    sound.click();
+    document.getElementById('completion-screen').classList.add('hidden');
+    document.getElementById('app-container').classList.remove('hidden');
+    this.renderQuests();
+    this.renderNextQuest();
+  },
+
+  /* === PARTICLES === */
+  triggerParticles(x, y) {
+    const canvas = document.getElementById('fx-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+    const colors = ['#ffb703', '#ffea00', '#4cc9f0', '#e63946', '#38b000'];
+    for(let i=0; i<70; i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 14,
+        vy: (Math.random() - 0.7) * 14,
+        size: Math.random() * 6 + 3,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        life: 1
+      });
+    }
+
+    const anim = () => {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        if(p.life > 0) {
+          alive = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35;
+          p.life -= 0.025;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+      });
+      if(alive) requestAnimationFrame(anim);
+      else ctx.clearRect(0,0,canvas.width,canvas.height);
+    };
+    anim();
+  },
+
+  /* === DETAILED 16-BIT MENLO KNIGHT & CANVASES === */
+  draw16BitMenloKnight(ctx, x, y, scale = 1, frame = 0, isAttacking = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    const idleY = Math.sin(frame * 0.1) * 1.5;
+
+    const NAVY_DARK = '#0a192f';
+    const NAVY_MID = '#172a45';
+    const GOLD_BRIGHT = '#ffea00';
+    const GOLD_DARK = '#ffb703';
+    const STEEL_LIGHT = '#e2e8f0';
+    const STEEL_DARK = '#94a3b8';
+    const CYAN_GLOW = '#4cc9f0';
+
+    // 1. Cape
+    ctx.fillStyle = NAVY_DARK;
+    ctx.beginPath();
+    ctx.moveTo(-6, 12 + idleY);
+    ctx.lineTo(-18 + Math.sin(frame * 0.15) * 4, 34 + idleY);
+    ctx.lineTo(-4, 36 + idleY);
+    ctx.lineTo(2, 18 + idleY);
+    ctx.fill();
+
+    // 2. Legs
+    ctx.fillStyle = STEEL_DARK;
+    ctx.fillRect(-6, 26, 5, 12);
+    ctx.fillRect(2, 26, 5, 12);
+    ctx.fillStyle = GOLD_DARK;
+    ctx.fillRect(-6, 28, 5, 3);
+    ctx.fillRect(2, 28, 5, 3);
+
+    // 3. Torso
+    ctx.fillStyle = NAVY_MID;
+    ctx.fillRect(-7, 10 + idleY, 15, 16);
+    ctx.fillStyle = GOLD_DARK;
+    ctx.fillRect(-8, 10 + idleY, 2, 16);
+    ctx.fillRect(7, 10 + idleY, 2, 16);
+
+    // Embossed 'M'
+    ctx.fillStyle = GOLD_BRIGHT;
+    ctx.beginPath();
+    ctx.moveTo(-4, 14 + idleY); ctx.lineTo(-4, 20 + idleY);
+    ctx.lineTo(-2, 17 + idleY); ctx.lineTo(0, 20 + idleY);
+    ctx.lineTo(2, 17 + idleY);  ctx.lineTo(4, 20 + idleY);
+    ctx.lineTo(4, 14 + idleY);
+    ctx.stroke();
+
+    // 4. Pauldrons
+    ctx.fillStyle = STEEL_LIGHT;
+    ctx.fillRect(-10, 10 + idleY, 5, 6);
+    ctx.fillRect(6, 10 + idleY, 5, 6);
+    ctx.fillStyle = GOLD_BRIGHT;
+    ctx.fillRect(-10, 10 + idleY, 5, 2);
+    ctx.fillRect(6, 10 + idleY, 5, 2);
+
+    // 5. Helmet & Visor
+    ctx.fillStyle = STEEL_LIGHT;
+    ctx.fillRect(-6, -4 + idleY, 13, 14);
+    ctx.fillStyle = STEEL_DARK;
+    ctx.fillRect(-6, 3 + idleY, 13, 7);
+
+    ctx.fillStyle = CYAN_GLOW;
+    ctx.fillRect(-2, 2 + idleY, 8, 2);
+
+    // Plume
+    ctx.fillStyle = GOLD_BRIGHT;
+    ctx.beginPath();
+    ctx.moveTo(0, -4 + idleY);
+    ctx.lineTo(-4, -14 + idleY + Math.sin(frame * 0.1) * 2);
+    ctx.lineTo(3, -10 + idleY);
+    ctx.fill();
+
+    // 6. Shield
+    ctx.fillStyle = NAVY_DARK;
+    ctx.fillRect(-14, 12 + idleY, 10, 14);
+    ctx.strokeStyle = GOLD_BRIGHT;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-14, 12 + idleY, 10, 14);
+    ctx.fillStyle = GOLD_BRIGHT;
+    ctx.font = '8px Courier';
+    ctx.fillText('M', -12, 22 + idleY);
+
+    // 7. Sword
+    if (isAttacking) {
+      ctx.fillStyle = STEEL_LIGHT;
+      ctx.fillRect(10, -8, 22, 4);
+      ctx.fillStyle = GOLD_BRIGHT;
+      ctx.fillRect(8, -10, 3, 8);
+      ctx.strokeStyle = GOLD_BRIGHT;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(10, 0, 26, -Math.PI / 4, Math.PI / 3);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = STEEL_LIGHT;
+      ctx.fillRect(8, 2 + idleY, 4, 18);
+      ctx.fillStyle = GOLD_BRIGHT;
+      ctx.fillRect(5, 14 + idleY, 10, 3);
+    }
+
+    ctx.restore();
+  },
+
+  /* === NEW 16-BIT SHADOW DRAGON BOSS MONSTER === */
+  draw16BitBossMonster(ctx, x, y, scale = 1, frame = 0, isHit = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+
+    if (isHit) {
+      ctx.translate(8, -4);
+      ctx.rotate(0.08);
+    }
+
+    const idleY = Math.sin(frame * 0.08) * 3;
+    const wingAngle = Math.sin(frame * 0.12) * 0.2;
+
+    const C_PURPLE_DARK = '#120721';
+    const C_PURPLE_MID = '#281140';
+    const C_PURPLE_LIGHT = '#5b219a';
+    const C_RED_GLOW = '#e63946';
+    const C_GOLD = '#ffea00';
+    const C_WHITE = '#ffffff';
+
+    // 1. WINGS (Left & Right background wings)
+    ctx.save();
+    ctx.translate(-10, -10 + idleY);
+    ctx.rotate(-wingAngle);
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_DARK;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(-32, -22); ctx.lineTo(-18, 10); ctx.lineTo(-4, 5);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(22, -10 + idleY);
+    ctx.rotate(wingAngle);
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_DARK;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(32, -22); ctx.lineTo(18, 10); ctx.lineTo(4, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // 2. TAIL
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_DARK;
+    ctx.fillRect(18 + Math.sin(frame * 0.1) * 3, 14 + idleY, 16, 5);
+    ctx.fillRect(28 + Math.sin(frame * 0.1) * 5, 10 + idleY, 8, 5);
+
+    // 3. BODY / TORSO
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_MID;
+    ctx.fillRect(-10, -12 + idleY, 30, 34);
+
+    // Belly Scales
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_LIGHT;
+    ctx.fillRect(-4, -4 + idleY, 18, 22);
+    ctx.fillStyle = isHit ? C_WHITE : C_RED_GLOW;
+    ctx.fillRect(0, 0 + idleY, 10, 10); // Core glow
+
+    // 4. LEGS / CLAWS
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_DARK;
+    ctx.fillRect(-12, 18 + idleY, 8, 12);
+    ctx.fillRect(12, 18 + idleY, 8, 12);
+    ctx.fillStyle = isHit ? C_WHITE : C_GOLD;
+    ctx.fillRect(-14, 28 + idleY, 4, 3);
+    ctx.fillRect(-10, 28 + idleY, 4, 3);
+    ctx.fillRect(12, 28 + idleY, 4, 3);
+    ctx.fillRect(16, 28 + idleY, 4, 3);
+
+    // 5. HEAD & HORNS
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_MID;
+    ctx.fillRect(-18, -28 + idleY, 26, 20);
+
+    // Horns
+    ctx.fillStyle = isHit ? C_WHITE : C_GOLD;
+    ctx.beginPath();
+    ctx.moveTo(-16, -28 + idleY); ctx.lineTo(-24, -42 + idleY); ctx.lineTo(-10, -28 + idleY);
+    ctx.moveTo(0, -28 + idleY); ctx.lineTo(6, -42 + idleY); ctx.lineTo(4, -28 + idleY);
+    ctx.fill();
+
+    // Snout
+    ctx.fillStyle = isHit ? C_WHITE : C_PURPLE_DARK;
+    ctx.fillRect(-22, -18 + idleY, 14, 10);
+
+    // Teeth
+    ctx.fillStyle = C_WHITE;
+    ctx.fillRect(-20, -10 + idleY, 3, 4);
+    ctx.fillRect(-15, -10 + idleY, 3, 4);
+
+    // Glowing Eyes
+    ctx.fillStyle = isHit ? C_RED_GLOW : C_GOLD;
+    ctx.fillRect(-14, -24 + idleY, 5, 5);
+    ctx.fillRect(-3, -24 + idleY, 5, 5);
+    ctx.fillStyle = C_WHITE;
+    ctx.fillRect(-13, -23 + idleY, 2, 2);
+    ctx.fillRect(-2, -23 + idleY, 2, 2);
+
+    ctx.restore();
+  },
+
+  drawMenloAvatar() {
+    const canvas = document.getElementById('menlo-avatar-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a192f'; ctx.fillRect(0,0,48,48);
+    this.draw16BitMenloKnight(ctx, 22, 20, 1.1, 0, false);
+  },
+
+  /* === OVERHAULED DETAILED 16-BIT RETRO PIXEL CASTLE === */
+  initKingdomCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    const resize = () => {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    let frame = 0;
+    const draw = () => {
+      frame++;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. NIGHT SKY & STARS
+      ctx.fillStyle = '#050a14'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = '#f8f9fa'; ctx.fillRect(w - 55, 15, 16, 16);
+      ctx.fillStyle = '#111e38'; ctx.fillRect(w - 51, 15, 12, 16); // Moon crescent
+
+      if (frame % 40 < 20) {
+        ctx.fillStyle = '#ffea00';
+        ctx.fillRect(30, 25, 2, 2); ctx.fillRect(110, 40, 2, 2);
+        ctx.fillRect(210, 20, 2, 2); ctx.fillRect(w - 120, 35, 2, 2);
+      }
+
+      // 2. MOUNTAINS & GROUND
+      ctx.fillStyle = '#0a172c';
+      ctx.beginPath();
+      ctx.moveTo(0, h - 30); ctx.lineTo(w * 0.25, h - 90);
+      ctx.lineTo(w * 0.5, h - 30); ctx.lineTo(w * 0.75, h - 100);
+      ctx.lineTo(w, h - 30); ctx.lineTo(w, h); ctx.lineTo(0, h);
+      ctx.fill();
+
+      ctx.fillStyle = '#122518'; ctx.fillRect(0, h - 30, w, 30);
+      ctx.fillStyle = '#38b000'; ctx.fillRect(0, h - 32, w, 2);
+
+      // --- 3. DETAILED 16-BIT CASTLE DRAWING ---
+      const cx = w / 2;
+      const cy = h - 32;
+      const castleW = Math.min(180 + this.data.level * 10, w - 50);
+      
+      const cStoneDark = '#101a28';
+      const cStoneMid = '#22344d';
+      const cStoneLight = '#3b5273';
+      const cRoof = '#b01c2e';
+      const cRoofLight = '#e63946';
+      const cGold = '#ffb703';
+      const cGlow = '#ffea00';
+
+      // Brick texture generator helper
+      const drawBricks = (bx, by, bw, bh) => {
+        ctx.fillStyle = cStoneDark;
+        for (let y = by; y < by + bh; y += 8) {
+          ctx.fillRect(bx, y, bw, 1);
+          let offset = Math.floor((y - by) / 8) % 2 === 0 ? 0 : 6;
+          for (let x = bx + offset; x < bx + bw; x += 12) {
+            ctx.fillRect(x, y, 1, 8);
+          }
+        }
+      };
+
+      // Crenellation (battlements) helper
+      const drawCrenellations = (x, y, width, count) => {
+        const toothW = width / (count * 2 - 1);
+        ctx.fillStyle = cStoneMid;
+        for (let i = 0; i < count; i++) {
+          ctx.fillRect(x + i * toothW * 2, y - 8, toothW, 8);
+          ctx.fillStyle = cStoneLight;
+          ctx.fillRect(x + i * toothW * 2, y - 8, toothW, 2);
+          ctx.fillStyle = cStoneMid;
+        }
+      };
+
+      // A. CENTER KEEP (Tall back tower)
+      const keepW = 60; const keepH = 120;
+      const keepX = cx - keepW / 2; const keepY = cy - keepH;
+      ctx.fillStyle = cStoneMid; ctx.fillRect(keepX, keepY, keepW, keepH);
+      ctx.fillStyle = cStoneLight; ctx.fillRect(keepX, keepY, 3, keepH);
+      drawBricks(keepX, keepY, keepW, keepH);
+      drawCrenellations(keepX, keepY, keepW, 4);
+
+      // Keep Glowing Arched Window
+      ctx.fillStyle = cStoneDark; ctx.fillRect(cx - 8, keepY + 20, 16, 22);
+      ctx.fillStyle = cGlow; ctx.fillRect(cx - 6, keepY + 23, 12, 17);
+      ctx.fillStyle = cStoneDark;
+      ctx.fillRect(cx - 6, keepY + 30, 12, 2);
+      ctx.fillRect(cx - 1, keepY + 23, 2, 17);
+
+      // Keep Roof Spire
+      ctx.fillStyle = cRoof;
+      ctx.beginPath();
+      ctx.moveTo(keepX - 4, keepY - 8);
+      ctx.lineTo(cx, keepY - 45);
+      ctx.lineTo(keepX + keepW + 4, keepY - 8);
+      ctx.fill();
+      ctx.fillStyle = cRoofLight;
+      ctx.beginPath();
+      ctx.moveTo(keepX - 4, keepY - 8);
+      ctx.lineTo(cx, keepY - 45);
+      ctx.lineTo(cx, keepY - 8);
+      ctx.fill();
+
+      // Banner Flag on Keep
+      const flagWave = Math.sin(frame * 0.12) * 4;
+      ctx.fillStyle = cStoneDark; ctx.fillRect(cx - 1, keepY - 62, 2, 18);
+      ctx.fillStyle = cGold;
+      ctx.beginPath();
+      ctx.moveTo(cx + 1, keepY - 62);
+      ctx.lineTo(cx + 16 + flagWave, keepY - 56);
+      ctx.lineTo(cx + 1, keepY - 50);
+      ctx.fill();
+
+      // B. MAIN CASTLE WALLS
+      const wallH = 60; const wallX = cx - castleW / 2; const wallY = cy - wallH;
+      ctx.fillStyle = cStoneMid; ctx.fillRect(wallX, wallY, castleW, wallH);
+      ctx.fillStyle = cStoneLight; ctx.fillRect(wallX, wallY, castleW, 3);
+      drawBricks(wallX, wallY, castleW, wallH);
+      drawCrenellations(wallX, wallY, castleW, Math.floor(castleW / 14));
+
+      // C. FLANKING CORNER TOWERS
+      const towerW = 32; const towerH = 95; const towerY = cy - towerH;
+      [wallX - towerW / 2, wallX + castleW - towerW / 2].forEach(tx => {
+        ctx.fillStyle = cStoneMid; ctx.fillRect(tx, towerY, towerW, towerH);
+        ctx.fillStyle = cStoneLight; ctx.fillRect(tx, towerY, 3, towerH);
+        drawBricks(tx, towerY, towerW, towerH);
+        drawCrenellations(tx, towerY, towerW, 3);
+
+        // Arrow Slits
+        ctx.fillStyle = cGlow;
+        ctx.fillRect(tx + towerW/2 - 1, towerY + 20, 3, 10);
+        ctx.fillRect(tx + towerW/2 - 1, towerY + 45, 3, 10);
+
+        // Tower Conical Roof
+        ctx.fillStyle = cRoof;
+        ctx.beginPath();
+        ctx.moveTo(tx - 3, towerY - 8);
+        ctx.lineTo(tx + towerW / 2, towerY - 32);
+        ctx.lineTo(tx + towerW + 3, towerY - 8);
+        ctx.fill();
+        ctx.fillStyle = cRoofLight;
+        ctx.beginPath();
+        ctx.moveTo(tx - 3, towerY - 8);
+        ctx.lineTo(tx + towerW / 2, towerY - 32);
+        ctx.lineTo(tx + towerW / 2, towerY - 8);
+        ctx.fill();
+      });
+
+      // D. GRAND GATEHOUSE (Center Arch & Wooden Drawbridge)
+      const gateW = 42; const gateH = 46;
+      const gateX = cx - gateW / 2; const gateY = cy - gateH;
+
+      ctx.fillStyle = cStoneDark; ctx.fillRect(gateX - 3, gateY - 6, gateW + 6, gateH + 6);
+      ctx.fillStyle = cStoneMid; ctx.fillRect(gateX - 1, gateY - 4, gateW + 2, gateH + 4);
+      drawCrenellations(gateX - 1, gateY - 4, gateW + 2, 3);
+
+      // Wooden Arch Doorway
+      ctx.fillStyle = '#080503'; ctx.fillRect(gateX + 6, gateY + 8, gateW - 12, gateH - 8);
+      ctx.fillStyle = '#3a200d'; ctx.fillRect(gateX + 8, gateY + 10, gateW - 16, gateH - 10);
+
+      // Portcullis Iron Grill Bars
+      ctx.fillStyle = '#111827';
+      for (let gx = gateX + 11; gx < gateX + gateW - 11; gx += 5) {
+        ctx.fillRect(gx, gateY + 10, 2, gateH - 10);
+      }
+      ctx.fillRect(gateX + 8, gateY + 20, gateW - 16, 2);
+      ctx.fillRect(gateX + 8, gateY + 30, gateW - 16, 2);
+
+      // Iron Ring Handles
+      ctx.fillStyle = cGold;
+      ctx.fillRect(gateX + 12, gateY + 26, 3, 3);
+      ctx.fillRect(gateX + gateW - 15, gateY + 26, 3, 3);
+
+      // E. ANIMATED FLICKERING TORCHES ON GATE
+      [gateX + 2, gateX + gateW - 5].forEach(tx => {
+        ctx.fillStyle = cGold; ctx.fillRect(tx, gateY + 16, 3, 5);
+        const fireOffset = Math.sin(frame * 0.3) * 1.5;
+        ctx.fillStyle = '#f97316'; ctx.fillRect(tx - 1, gateY + 11 + fireOffset, 5, 5);
+        ctx.fillStyle = cGlow; ctx.fillRect(tx, gateY + 9 + fireOffset, 3, 4);
+      });
+
+      // 4. DRAW THE MENLO KNIGHT IN FRONT OF THE CASTLE
+      this.draw16BitMenloKnight(ctx, cx + 45, cy - 32, 1.1, frame, false);
+
+      if (canvasId === 'kingdom-canvas') requestAnimationFrame(draw);
+    };
+    draw();
+  },
+
+  /* === OVERHAULED SMOOTH 16-BIT BOSS COMBAT ENGINE === */
+  initBossArenaLoop(quest) {
+    const canvas = document.getElementById('boss-arena-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let frame = 0;
+    const render = () => {
+      frame++;
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // 1. ARENA BACKGROUND
+      ctx.fillStyle = '#0a0512'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#1c0b2b'; ctx.fillRect(0, h - 25, w, 25);
+      ctx.fillStyle = '#e63946'; ctx.fillRect(0, h - 27, w, 2);
+
+      const anim = this.state.bossAnimState;
+      const startX = 50;
+      const targetX = Math.max(startX + 60, w - 120);
+
+      // 2. SMOOTH 4-PHASE COMBAT MOTION MACHINE
+      if (anim.phase === 'dash_in') {
+        anim.phaseTimer++;
+        const progress = Math.min(1, anim.phaseTimer / 8); // 8 frames to reach target
+        const ease = 1 - Math.pow(1 - progress, 3); // Ease-out
+        anim.knightX = startX + (targetX - startX) * ease;
+
+        if (progress >= 1) {
+          anim.phase = 'slash';
+          anim.phaseTimer = 0;
+          anim.slashArc.active = true;
+          anim.slashArc.timer = 0;
+          anim.monsterHit = true;
+          anim.monsterFlashTimer = 10;
+          anim.monsterRecoilX = 14;
+
+          sound.hit();
+
+          // Particle Spark Burst
+          for(let i=0; i<18; i++) {
+            anim.sparks.push({
+              x: targetX + 10,
+              y: h - 65,
+              vx: (Math.random() - 0.3) * 10,
+              vy: (Math.random() - 0.7) * 10,
+              size: Math.random() * 4 + 2,
+              color: i % 2 === 0 ? '#ffea00' : '#e63946',
+              life: 1
+            });
+          }
+
+          // Floating Damage Text
+          anim.damagePopups.push({
+            text: "-50 HP!",
+            x: targetX,
+            y: h - 85,
+            vy: -1.5,
+            opacity: 1
+          });
+
+          document.getElementById('app-container').classList.add('shake');
+          setTimeout(() => document.getElementById('app-container').classList.remove('shake'), 200);
+        }
+      } else if (anim.phase === 'slash') {
+        anim.phaseTimer++;
+        anim.knightX = targetX;
+
+        if (anim.phaseTimer > 6) { // Brief hit pause
+          anim.phase = 'dash_back';
+          anim.phaseTimer = 0;
+        }
+      } else if (anim.phase === 'dash_back') {
+        anim.phaseTimer++;
+        const progress = Math.min(1, anim.phaseTimer / 10);
+        const ease = progress * progress; // Ease-in leap back
+        anim.knightX = targetX - (targetX - startX) * ease;
+
+        if (progress >= 1) {
+          anim.phase = 'idle';
+          anim.knightX = startX;
+
+          // Check if quest boss is slain
+          const allDone = quest.stages.every(s => s.completed);
+          if (allDone) {
+            this.completeQuest(quest);
+          } else {
+            this.data.xp += 30;
+            this.saveData();
+            this.renderNextQuest();
+          }
+        }
+      } else {
+        anim.knightX = startX;
+      }
+
+      // Decay monster recoil & hit flash
+      if (anim.monsterRecoilX > 0) anim.monsterRecoilX *= 0.82;
+      if (anim.monsterFlashTimer > 0) {
+        anim.monsterFlashTimer--;
+        if (anim.monsterFlashTimer === 0) anim.monsterHit = false;
+      }
+
+      // 3. DRAW SHADOW DRAGON BOSS MONSTER
+      const monsterX = w - 65 + anim.monsterRecoilX;
+      const monsterY = h - 62;
+      this.draw16BitBossMonster(ctx, monsterX, monsterY, 1.3, frame, anim.monsterHit);
+
+      // 4. DRAW MENLO KNIGHT
+      this.draw16BitMenloKnight(ctx, anim.knightX, h - 58, 1.25, frame, anim.phase === 'slash');
+
+      // 5. DRAW SWORD SLASH ARC EFFECT
+      if (anim.slashArc.active) {
+        anim.slashArc.timer++;
+        if (anim.slashArc.timer <= 8) {
+          ctx.save();
+          ctx.strokeStyle = '#ffea00';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(anim.knightX + 25, h - 55, 32, -Math.PI / 3, Math.PI / 3);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(anim.knightX + 25, h - 55, 32, -Math.PI / 4, Math.PI / 4);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          anim.slashArc.active = false;
+        }
+      }
+
+      // 6. DRAW SPARKS
+      anim.sparks.forEach(s => {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.4;
+        s.life -= 0.05;
+        if (s.life > 0) {
+          ctx.fillStyle = s.color;
+          ctx.fillRect(s.x, s.y, s.size, s.size);
+        }
+      });
+      anim.sparks = anim.sparks.filter(s => s.life > 0);
+
+      // 7. DRAW DAMAGE POPUPS
+      anim.damagePopups.forEach(pop => {
+        pop.y += pop.vy;
+        pop.opacity -= 0.03;
+        if (pop.opacity > 0) {
+          ctx.fillStyle = `rgba(255, 234, 0, ${pop.opacity})`;
+          ctx.font = '900 16px Courier New';
+          ctx.fillText(pop.text, pop.x, pop.y);
+        }
+      });
+      anim.damagePopups = anim.damagePopups.filter(pop => pop.opacity > 0);
+
+      if (document.getElementById('boss-arena-canvas')) {
+        requestAnimationFrame(render);
+      }
+    };
+    render();
+  }
+};
+
+window.onload = () => app.init();
+</script>
+
+</body>
+</html>
