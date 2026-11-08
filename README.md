@@ -22,6 +22,14 @@ A fictional American diner with 23 original dishes, ingredient customization, in
 
 The portfolio card includes a screenshot of the diner menu (`assets/good-hour-diner-screenshot.jpg`).
 
+### Questline
+
+[Open Questline](https://tkindler7.github.io/Teddy-Kindler/questline/) · [View the source on GitHub](https://github.com/TKindler7/Teddy-Kindler/blob/main/questline/index.html)
+
+A medieval homework planner starring the Menlo Knight. Organize assignments as quests, divide larger projects into boss battle stages, and complete Pomodoro focus sessions to earn XP and grow your castle. Subjects, assignments, and progress are saved in the current browser using localStorage; no account is required.
+
+The portfolio card includes a live app preview. The complete app is hosted in this repository at `questline/index.html` and uses plain HTML, CSS, JavaScript, Canvas, and synthesized Web Audio, with no external dependencies.
+
 ### Name Game — coming soon
 
 A planned game for matching names to faces. The portfolio currently includes a placeholder card; the game files and live demo are not yet in this repository.
@@ -41,6 +49,7 @@ The portfolio uses plain HTML and CSS and is published with GitHub Pages.
 Teddy-Kindler/
 ├── index.html   # Portfolio homepage and CSS
 ├── assets/      # Project screenshots
+├── questline/   # Questline app (index.html)
 └── README.md    # Project overview and editing guide
 ```
 
