@@ -30,6 +30,12 @@ A medieval homework planner starring the Menlo Knight. Organize assignments as q
 
 The portfolio card includes a live app preview. The complete app is hosted in this repository at `questline/index.html` and uses plain HTML, CSS, JavaScript, Canvas, and synthesized Web Audio, with no external dependencies.
 
+### Orbit Breakout
+
+[Explore Orbit Breakout](https://tkindler7.github.io/Teddy-Kindler/orbit-breakout/)
+
+A native Unreal Engine 5.8 sci-fi escape game featuring two weapons, enemy awareness, a solo Bull Sentinel boss and an escape sequence. The showcase explains the gameplay, development approach, controls and verification status. There is no browser demo or current standalone download. The complete private source repository is prepared locally but has not yet been published.
+
 ### Name Game — coming soon
 
 A planned game for matching names to faces. The portfolio currently includes a placeholder card; the game files and live demo are not yet in this repository.
