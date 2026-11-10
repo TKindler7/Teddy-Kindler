@@ -34,7 +34,7 @@ The portfolio card includes a live app preview. The complete app is hosted in th
 
 [Explore Orbit Breakout](https://tkindler7.github.io/Teddy-Kindler/orbit-breakout/)
 
-A native Unreal Engine 5.8 sci-fi escape game featuring two weapons, enemy awareness, a solo Bull Sentinel boss and an escape sequence. The showcase explains the gameplay, development approach, controls and verification status. There is no browser demo or current standalone download. The complete private source repository is prepared locally but has not yet been published.
+A native Unreal Engine 5.8 sci-fi escape game featuring two weapons, enemy awareness, a solo Bull Sentinel boss and an escape sequence. The showcase explains the gameplay, development approach, controls and verification status. There is no browser demo or current standalone download. The complete editable game is in [TKindler7/OrbitBreakout](https://github.com/TKindler7/OrbitBreakout), a private repository containing the source, saved level and licensed assets. Access requires permission from the owner.
 
 ### Name Game — coming soon
 
