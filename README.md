@@ -6,6 +6,13 @@ My portfolio for **Coding with AI at Menlo School**. This site is a place to sha
 
 ## Projects
 
+### Parli Review
+
+[Open Parli Review](https://tkindler7.github.io/Teddy-Kindler/parli-review/) · [Source code](https://github.com/TKindler7/Parli-Review)
+
+A parliamentary debate practice app with microphone recording, ordered audio uploads, editable transcripts, argument flow, detailed team and speaker coaching, Markdown export, and optional independent AI judging. The public portfolio edition keeps rounds in the current browser and connects directly to OpenAI with a session-only key. The written sample is free to explore; real AI requests require a funded API key. The source repository includes the PRD, server-ready edition, and regression tests.
+
+
 ### Little Rehearsal
 
 [Open Little Rehearsal](https://little-rehearsal.tk7272.chatgpt.site/)
